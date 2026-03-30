@@ -1,0 +1,72 @@
+# Binaries
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test binary, built with `go test -c`
+*.test
+
+# Output of the go coverage tool
+*.out
+
+# Go workspace file
+go.work
+go.work.sum
+
+# Dependency directories (remove if using Go modules)
+vendor/
+
+# IDEs and editors
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Environment files
+.env
+.env.local
+
+# Build directories
+bin/
+dist/
+build/
+
+# Coverage reports
+coverage/
+coverage.out
+
+# Temporary files
+tmp/
+temp/
+
+# Go cache (optional, usually not needed)
+.cache/
+
+# Generated files (if you use code generation)
+*.gen.go
+
+# Test artifacts
+*.coverprofile
+
+# Air (live reload tool)
+.air/
+
+# Delve debugger
+debug
+
+# Docker
+docker-compose.override.yml
+
+# Local config
+config.local.yaml
+config.local.yml
