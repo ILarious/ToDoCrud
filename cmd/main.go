@@ -2,13 +2,21 @@ package main
 
 import (
 	"log"
+	"os"
+	"time"
 
 	httpapp "todo_crud/internal/app/http"
 	"todo_crud/internal/app/http/handler"
+	"todo_crud/internal/domain/service"
+	"todo_crud/internal/infrastructure/memory"
 )
 
 func main() {
-	authHandler := handler.NewAuthHandler()
+	users := memory.NewUserRepository()
+
+	tokenKey := os.Getenv("AUTH_SIGNING_KEY")
+	authService := service.NewAuthService(users, tokenKey, 24*time.Hour)
+	authHandler := handler.NewAuthHandler(authService)
 	listHandler := handler.NewListHandler()
 	itemHandler := handler.NewItemHandler()
 

@@ -2,15 +2,20 @@ package handler
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 
 	"todo_crud/internal/app/http/dto"
+	domainerr "todo_crud/internal/domain/errors"
+	"todo_crud/internal/domain/service"
 )
 
-type AuthHandler struct{}
+type AuthHandler struct {
+	auth service.AuthService
+}
 
-func NewAuthHandler() *AuthHandler {
-	return &AuthHandler{}
+func NewAuthHandler(auth service.AuthService) *AuthHandler {
+	return &AuthHandler{auth: auth}
 }
 
 func (h *AuthHandler) SignUp(w http.ResponseWriter, r *http.Request) {
@@ -19,12 +24,20 @@ func (h *AuthHandler) SignUp(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "invalid json")
 		return
 	}
-	if req.Name == "" || req.Username == "" || req.Password == "" {
-		writeError(w, http.StatusBadRequest, "name, username and password are required")
+	token, err := h.auth.SignUp(r.Context(), req.Name, req.Username, req.Password)
+	if err != nil {
+		switch {
+		case errors.Is(err, domainerr.ErrInvalidInput):
+			writeError(w, http.StatusBadRequest, "invalid sign-up payload")
+		case errors.Is(err, domainerr.ErrUsernameTaken):
+			writeError(w, http.StatusConflict, "username already exists")
+		default:
+			writeError(w, http.StatusInternalServerError, "failed to create user")
+		}
 		return
 	}
 
-	writeJSON(w, http.StatusCreated, dto.AuthResponse{Token: "stub-token"})
+	writeJSON(w, http.StatusCreated, dto.AuthResponse{Token: token})
 }
 
 func (h *AuthHandler) SignIn(w http.ResponseWriter, r *http.Request) {
@@ -33,12 +46,20 @@ func (h *AuthHandler) SignIn(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "invalid json")
 		return
 	}
-	if req.Username == "" || req.Password == "" {
-		writeError(w, http.StatusBadRequest, "username and password are required")
+	token, err := h.auth.SignIn(r.Context(), req.Username, req.Password)
+	if err != nil {
+		switch {
+		case errors.Is(err, domainerr.ErrInvalidInput):
+			writeError(w, http.StatusBadRequest, "invalid sign-in payload")
+		case errors.Is(err, domainerr.ErrInvalidCredentials):
+			writeError(w, http.StatusUnauthorized, "invalid username or password")
+		default:
+			writeError(w, http.StatusInternalServerError, "failed to sign in")
+		}
 		return
 	}
 
-	writeJSON(w, http.StatusOK, dto.AuthResponse{Token: "stub-token"})
+	writeJSON(w, http.StatusOK, dto.AuthResponse{Token: token})
 }
 
 func writeJSON(w http.ResponseWriter, status int, v any) {
