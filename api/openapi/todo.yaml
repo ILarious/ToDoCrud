@@ -1,0 +1,475 @@
+openapi: 3.0.3
+info:
+  title: ToDo CRUD API
+  version: 1.0.0
+  description: API contract for users, todo lists, and todo items.
+
+servers:
+  - url: http://localhost:8080
+
+tags:
+  - name: Auth
+  - name: Lists
+  - name: Items
+
+paths:
+  /api/v1/auth/sign-up:
+    post:
+      tags: [Auth]
+      summary: Register new user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SignUpRequest'
+      responses:
+        '201':
+          description: User created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Username already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/auth/sign-in:
+    post:
+      tags: [Auth]
+      summary: Sign in user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SignInRequest'
+      responses:
+        '200':
+          description: Access token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/lists:
+    get:
+      tags: [Lists]
+      summary: Get all user lists
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Lists fetched
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TodoListResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    post:
+      tags: [Lists]
+      summary: Create list
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTodoListRequest'
+      responses:
+        '201':
+          description: List created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TodoListResponse'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/lists/{listId}:
+    get:
+      tags: [Lists]
+      summary: Get list by id
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ListID'
+      responses:
+        '200':
+          description: List fetched
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TodoListResponse'
+        '404':
+          description: List not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    patch:
+      tags: [Lists]
+      summary: Update list
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ListID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateTodoListRequest'
+      responses:
+        '200':
+          description: List updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TodoListResponse'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: List not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      tags: [Lists]
+      summary: Delete list
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ListID'
+      responses:
+        '204':
+          description: List deleted
+        '404':
+          description: List not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/lists/{listId}/items:
+    get:
+      tags: [Items]
+      summary: Get list items
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ListID'
+      responses:
+        '200':
+          description: Items fetched
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TodoItemResponse'
+        '404':
+          description: List not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    post:
+      tags: [Items]
+      summary: Create item in list
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ListID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTodoItemRequest'
+      responses:
+        '201':
+          description: Item created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TodoItemResponse'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: List not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/lists/{listId}/items/{itemId}:
+    get:
+      tags: [Items]
+      summary: Get item by id
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ListID'
+        - $ref: '#/components/parameters/ItemID'
+      responses:
+        '200':
+          description: Item fetched
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TodoItemResponse'
+        '404':
+          description: Item not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    patch:
+      tags: [Items]
+      summary: Update item
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ListID'
+        - $ref: '#/components/parameters/ItemID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateTodoItemRequest'
+      responses:
+        '200':
+          description: Item updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TodoItemResponse'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Item not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      tags: [Items]
+      summary: Delete item
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ListID'
+        - $ref: '#/components/parameters/ItemID'
+      responses:
+        '204':
+          description: Item deleted
+        '404':
+          description: Item not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    ListID:
+      name: listId
+      in: path
+      required: true
+      schema:
+        type: integer
+        format: int64
+        minimum: 1
+    ItemID:
+      name: itemId
+      in: path
+      required: true
+      schema:
+        type: integer
+        format: int64
+        minimum: 1
+
+  schemas:
+    SignUpRequest:
+      type: object
+      required: [name, username, password]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        username:
+          type: string
+          minLength: 3
+          maxLength: 50
+        password:
+          type: string
+          minLength: 6
+          maxLength: 128
+
+    SignInRequest:
+      type: object
+      required: [username, password]
+      properties:
+        username:
+          type: string
+          minLength: 3
+          maxLength: 50
+        password:
+          type: string
+          minLength: 6
+          maxLength: 128
+
+    AuthResponse:
+      type: object
+      required: [token]
+      properties:
+        token:
+          type: string
+
+    CreateTodoListRequest:
+      type: object
+      required: [title]
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 120
+        description:
+          type: string
+          maxLength: 1000
+
+    UpdateTodoListRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 120
+        description:
+          type: string
+          maxLength: 1000
+
+    TodoListResponse:
+      type: object
+      required: [id, user_id, title]
+      properties:
+        id:
+          type: integer
+          format: int64
+        user_id:
+          type: integer
+          format: int64
+        title:
+          type: string
+        description:
+          type: string
+
+    CreateTodoItemRequest:
+      type: object
+      required: [title]
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+        description:
+          type: string
+          maxLength: 2000
+
+    UpdateTodoItemRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+        description:
+          type: string
+          maxLength: 2000
+        done:
+          type: boolean
+
+    TodoItemResponse:
+      type: object
+      required: [id, list_id, title, done]
+      properties:
+        id:
+          type: integer
+          format: int64
+        list_id:
+          type: integer
+          format: int64
+        title:
+          type: string
+        description:
+          type: string
+        done:
+          type: boolean
+
+    UserResponse:
+      type: object
+      required: [id, name, username]
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+        username:
+          type: string
+
+    ErrorResponse:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
