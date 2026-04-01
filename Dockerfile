@@ -14,6 +14,7 @@ WORKDIR /app
 
 RUN addgroup -S app && adduser -S app -G app
 COPY --from=builder /bin/todo /app/todo
+COPY --from=builder /app/migrations /app/migrations
 
 EXPOSE 8080
 USER app
