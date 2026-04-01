@@ -19,6 +19,7 @@ func NewRouter(authHandler *handler.AuthHandler, listHandler *handler.ListHandle
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
 	r.Use(middleware.Timeout(5 * time.Second))
+	r.Use(CORSMiddleware)
 
 	r.Route("/api/v1/auth", func(r chi.Router) {
 		r.Post("/sign-up", authHandler.SignUp)

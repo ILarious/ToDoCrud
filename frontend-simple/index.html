@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Todo Frontend</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <div class="app">
+    <aside class="panel auth-panel">
+      <h1>Todo</h1>
+      <p class="muted">Простой клиент для твоего API</p>
+
+      <div class="row">
+        <input id="apiBase" type="text" value="http://localhost:8080/api/v1" />
+        <button id="saveApiBase" class="secondary">API</button>
+      </div>
+
+      <div class="auth-tabs">
+        <button id="tabSignIn" class="active">Sign In</button>
+        <button id="tabSignUp">Sign Up</button>
+      </div>
+
+      <form id="signInForm" class="stack">
+        <input id="signInUsername" placeholder="username" required />
+        <input id="signInPassword" type="password" placeholder="password" required />
+        <button type="submit">Войти</button>
+      </form>
+
+      <form id="signUpForm" class="stack hidden">
+        <input id="signUpName" placeholder="name" required />
+        <input id="signUpUsername" placeholder="username" required />
+        <input id="signUpPassword" type="password" placeholder="password" required />
+        <button type="submit">Зарегистрироваться</button>
+      </form>
+
+      <div class="stack">
+        <button id="logoutBtn" class="secondary">Выйти</button>
+        <code id="tokenPreview" class="token">token: -</code>
+      </div>
+    </aside>
+
+    <main class="panel main-panel">
+      <section class="lists-section">
+        <div class="section-head">
+          <h2>Списки</h2>
+          <button id="refreshLists" class="secondary">Обновить</button>
+        </div>
+
+        <form id="createListForm" class="row form-inline">
+          <input id="newListTitle" placeholder="Новый список" required />
+          <input id="newListDescription" placeholder="Описание" />
+          <button type="submit">+ Добавить</button>
+        </form>
+
+        <ul id="lists" class="list"></ul>
+      </section>
+
+      <section class="items-section">
+        <div class="section-head">
+          <h2 id="itemsTitle">Задачи</h2>
+          <button id="refreshItems" class="secondary">Обновить</button>
+        </div>
+
+        <form id="createItemForm" class="row form-inline">
+          <input id="newItemTitle" placeholder="Новая задача" required />
+          <input id="newItemDescription" placeholder="Описание" />
+          <button type="submit">+ Добавить</button>
+        </form>
+
+        <ul id="items" class="list"></ul>
+      </section>
+    </main>
+  </div>
+
+  <div id="toast" class="toast"></div>
+  <script src="./app.js"></script>
+</body>
+</html>
