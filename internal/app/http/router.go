@@ -8,9 +8,10 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 
 	"todo_crud/internal/app/http/handler"
+	"todo_crud/internal/domain/service"
 )
 
-func NewRouter(authHandler *handler.AuthHandler, listHandler *handler.ListHandler, itemHandler *handler.ItemHandler) http.Handler {
+func NewRouter(authHandler *handler.AuthHandler, listHandler *handler.ListHandler, itemHandler *handler.ItemHandler, authService service.AuthService) http.Handler {
 	r := chi.NewRouter()
 
 	r.Use(middleware.RequestID)
@@ -25,6 +26,8 @@ func NewRouter(authHandler *handler.AuthHandler, listHandler *handler.ListHandle
 	})
 
 	r.Route("/api/v1/lists", func(r chi.Router) {
+		r.Use(AuthMiddleware(authService))
+
 		r.Get("/", listHandler.List)
 		r.Post("/", listHandler.Create)
 

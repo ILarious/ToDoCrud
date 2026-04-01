@@ -17,13 +17,18 @@ import (
 
 func newTestRouter() http.Handler {
 	users := memory.NewUserRepository()
+	lists := memory.NewListRepository()
+	items := memory.NewItemRepository()
+
 	authSvc := service.NewAuthService(users, "integration-secret", time.Hour)
+	listSvc := service.NewListService(lists)
+	itemSvc := service.NewItemService(items, lists)
 
 	authHandler := handler.NewAuthHandler(authSvc)
-	listHandler := handler.NewListHandler()
-	itemHandler := handler.NewItemHandler()
+	listHandler := handler.NewListHandler(listSvc)
+	itemHandler := handler.NewItemHandler(itemSvc)
 
-	return httpapp.NewRouter(authHandler, listHandler, itemHandler)
+	return httpapp.NewRouter(authHandler, listHandler, itemHandler, authSvc)
 }
 
 func TestAuthIntegration_SignUpThenSignIn(t *testing.T) {
