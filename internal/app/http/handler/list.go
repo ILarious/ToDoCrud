@@ -2,59 +2,112 @@ package handler
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 	"strconv"
 
 	"github.com/go-chi/chi/v5"
 
 	"todo_crud/internal/app/http/dto"
+	domainerr "todo_crud/internal/domain/errors"
+	"todo_crud/internal/domain/model"
+	"todo_crud/internal/domain/service"
 )
 
-type ListHandler struct{}
+type ListHandler struct {
+	lists service.ListService
+}
 
-func NewListHandler() *ListHandler {
-	return &ListHandler{}
+func NewListHandler(lists service.ListService) *ListHandler {
+	return &ListHandler{lists: lists}
 }
 
 func (h *ListHandler) List(w http.ResponseWriter, r *http.Request) {
-	writeJSON(w, http.StatusOK, []dto.TodoListResponse{})
+	userID, ok := UserIDFromContext(r.Context())
+	if !ok {
+		writeError(w, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+
+	lists, err := h.lists.GetAll(r.Context(), userID)
+	if err != nil {
+		if errors.Is(err, domainerr.ErrInvalidInput) {
+			writeError(w, http.StatusBadRequest, "invalid input")
+			return
+		}
+		writeError(w, http.StatusInternalServerError, "failed to list todo lists")
+		return
+	}
+
+	resp := make([]dto.TodoListResponse, 0, len(lists))
+	for _, list := range lists {
+		resp = append(resp, mapTodoList(list))
+	}
+	writeJSON(w, http.StatusOK, resp)
 }
 
 func (h *ListHandler) Create(w http.ResponseWriter, r *http.Request) {
+	userID, ok := UserIDFromContext(r.Context())
+	if !ok {
+		writeError(w, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+
 	var req dto.CreateTodoListRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		writeError(w, http.StatusBadRequest, "invalid json")
 		return
 	}
-	if req.Title == "" {
-		writeError(w, http.StatusBadRequest, "title is required")
+
+	list, err := h.lists.Create(r.Context(), userID, req.Title, req.Description)
+	if err != nil {
+		if errors.Is(err, domainerr.ErrInvalidInput) {
+			writeError(w, http.StatusBadRequest, "title is required")
+			return
+		}
+		writeError(w, http.StatusInternalServerError, "failed to create todo list")
 		return
 	}
 
-	writeJSON(w, http.StatusCreated, dto.TodoListResponse{
-		ID:          1,
-		UserID:      1,
-		Title:       req.Title,
-		Description: req.Description,
-	})
+	writeJSON(w, http.StatusCreated, mapTodoList(list))
 }
 
 func (h *ListHandler) GetByID(w http.ResponseWriter, r *http.Request) {
+	userID, ok := UserIDFromContext(r.Context())
+	if !ok {
+		writeError(w, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+
 	listID, err := parseID(chi.URLParam(r, "listId"))
 	if err != nil {
 		writeError(w, http.StatusBadRequest, "invalid listId")
 		return
 	}
 
-	writeJSON(w, http.StatusOK, dto.TodoListResponse{
-		ID:          listID,
-		UserID:      1,
-		Title:       "stub-list",
-		Description: "",
-	})
+	list, err := h.lists.GetByID(r.Context(), userID, listID)
+	if err != nil {
+		switch {
+		case errors.Is(err, domainerr.ErrInvalidInput):
+			writeError(w, http.StatusBadRequest, "invalid listId")
+		case errors.Is(err, domainerr.ErrListNotFound):
+			writeError(w, http.StatusNotFound, "list not found")
+		default:
+			writeError(w, http.StatusInternalServerError, "failed to get todo list")
+		}
+		return
+	}
+
+	writeJSON(w, http.StatusOK, mapTodoList(list))
 }
 
 func (h *ListHandler) Update(w http.ResponseWriter, r *http.Request) {
+	userID, ok := UserIDFromContext(r.Context())
+	if !ok {
+		writeError(w, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+
 	listID, err := parseID(chi.URLParam(r, "listId"))
 	if err != nil {
 		writeError(w, http.StatusBadRequest, "invalid listId")
@@ -67,22 +120,47 @@ func (h *ListHandler) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp := dto.TodoListResponse{ID: listID, UserID: 1, Title: "stub-list", Description: ""}
-	if req.Title != nil {
-		resp.Title = *req.Title
-	}
-	if req.Description != nil {
-		resp.Description = *req.Description
+	list, err := h.lists.Update(r.Context(), userID, listID, req.Title, req.Description)
+	if err != nil {
+		switch {
+		case errors.Is(err, domainerr.ErrInvalidInput):
+			writeError(w, http.StatusBadRequest, "invalid update payload")
+		case errors.Is(err, domainerr.ErrListNotFound):
+			writeError(w, http.StatusNotFound, "list not found")
+		default:
+			writeError(w, http.StatusInternalServerError, "failed to update todo list")
+		}
+		return
 	}
 
-	writeJSON(w, http.StatusOK, resp)
+	writeJSON(w, http.StatusOK, mapTodoList(list))
 }
 
 func (h *ListHandler) Delete(w http.ResponseWriter, r *http.Request) {
-	if _, err := parseID(chi.URLParam(r, "listId")); err != nil {
+	userID, ok := UserIDFromContext(r.Context())
+	if !ok {
+		writeError(w, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+
+	listID, err := parseID(chi.URLParam(r, "listId"))
+	if err != nil {
 		writeError(w, http.StatusBadRequest, "invalid listId")
 		return
 	}
+
+	if err := h.lists.Delete(r.Context(), userID, listID); err != nil {
+		switch {
+		case errors.Is(err, domainerr.ErrInvalidInput):
+			writeError(w, http.StatusBadRequest, "invalid listId")
+		case errors.Is(err, domainerr.ErrListNotFound):
+			writeError(w, http.StatusNotFound, "list not found")
+		default:
+			writeError(w, http.StatusInternalServerError, "failed to delete todo list")
+		}
+		return
+	}
+
 	w.WriteHeader(http.StatusNoContent)
 }
 
@@ -92,4 +170,13 @@ func parseID(raw string) (int64, error) {
 		return 0, strconv.ErrSyntax
 	}
 	return id, nil
+}
+
+func mapTodoList(list model.TodoList) dto.TodoListResponse {
+	return dto.TodoListResponse{
+		ID:          list.ID,
+		UserID:      list.UserID,
+		Title:       list.Title,
+		Description: list.Description,
+	}
 }
