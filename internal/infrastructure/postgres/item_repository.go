@@ -3,6 +3,7 @@ package postgres
 import (
 	"context"
 	"database/sql"
+	"strings"
 
 	domainerr "todo_crud/internal/domain/errors"
 	"todo_crud/internal/domain/model"
@@ -18,13 +19,13 @@ func NewItemRepository(db *sql.DB) *ItemRepository {
 
 func (r *ItemRepository) Create(ctx context.Context, item model.TodoItem) (int64, error) {
 	const q = `
-		INSERT INTO todo_items (list_id, title, description, done)
-		VALUES ($1, $2, $3, $4)
+		INSERT INTO todo_items (list_id, title, description, done, planning_status)
+		VALUES ($1, $2, $3, $4, $5)
 		RETURNING id
 	`
 
 	var id int64
-	if err := r.db.QueryRowContext(ctx, q, item.ListID, item.Title, item.Description, item.Done).Scan(&id); err != nil {
+	if err := r.db.QueryRowContext(ctx, q, item.ListID, item.Title, item.Description, item.Done, planningStatusForDescription(item.Description)).Scan(&id); err != nil {
 		return 0, err
 	}
 	return id, nil
@@ -83,11 +84,17 @@ func (r *ItemRepository) Update(ctx context.Context, item model.TodoItem) error 
 		SET title = $1,
 		    description = $2,
 		    done = $3,
+		    planning_status = $4,
+		    planning_claimed_at = NULL,
+		    planning_completed_at = CASE WHEN $4 = 'completed' THEN NOW() ELSE NULL END,
+		    planning_last_error = '',
+		    planning_attempts = CASE WHEN $4 = 'pending' THEN 0 ELSE planning_attempts END,
 		    updated_at = NOW()
-		WHERE id = $4
+		WHERE id = $5
 	`
 
-	res, err := r.db.ExecContext(ctx, q, item.Title, item.Description, item.Done, item.ID)
+	status := planningStatusForDescription(item.Description)
+	res, err := r.db.ExecContext(ctx, q, item.Title, item.Description, item.Done, status, item.ID)
 	if err != nil {
 		return err
 	}
@@ -99,6 +106,13 @@ func (r *ItemRepository) Update(ctx context.Context, item model.TodoItem) error 
 		return domainerr.ErrItemNotFound
 	}
 	return nil
+}
+
+func planningStatusForDescription(description string) string {
+	if strings.TrimSpace(description) == "" {
+		return "pending"
+	}
+	return "completed"
 }
 
 func (r *ItemRepository) Delete(ctx context.Context, id int64) error {

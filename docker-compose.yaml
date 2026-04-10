@@ -17,11 +17,11 @@ services:
       timeout: 3s
       retries: 10
 
-  app:
+  web:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: todo-app
+    container_name: todo-web
     restart: unless-stopped
     depends_on:
       postgres:
@@ -35,15 +35,44 @@ services:
       POSTGRES_DB: todo
       POSTGRES_SSLMODE: disable
       MIGRATIONS_DIR: /app/migrations
+    command: ["/app/todo-api"]
     ports:
       - "8080:8080"
+
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: todo-worker
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      web:
+        condition: service_started
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: "5432"
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: todo
+      POSTGRES_SSLMODE: disable
+      POLZA_API_KEY: ${POLZA_API_KEY:-}
+      POLZA_API_URL: ${POLZA_API_URL:-https://polza.ai/api/v1/chat/completions}
+      POLZA_MODEL: ${POLZA_MODEL:-openai/gpt-5.4-mini}
+      TASK_PLAN_WORKERS: ${TASK_PLAN_WORKERS:-4}
+      TASK_PLAN_POLL_INTERVAL: ${TASK_PLAN_POLL_INTERVAL:-3s}
+      TASK_PLAN_STALE_AFTER: ${TASK_PLAN_STALE_AFTER:-30s}
+      TASK_PLAN_CLAIM_BATCH: ${TASK_PLAN_CLAIM_BATCH:-4}
+      TASK_PLAN_MAX_ATTEMPTS: ${TASK_PLAN_MAX_ATTEMPTS:-3}
+    command: ["/app/todo-worker"]
 
   frontend:
     image: nginx:1.27-alpine
     container_name: todo-frontend
     restart: unless-stopped
     depends_on:
-      - app
+      - web
     volumes:
       - ./frontend-simple:/usr/share/nginx/html:ro
     ports:
