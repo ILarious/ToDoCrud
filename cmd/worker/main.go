@@ -9,9 +9,10 @@ import (
 	"syscall"
 	"time"
 
+	workerapp "todo_crud/internal/app/worker"
+	"todo_crud/internal/infrastructure/polza"
 	"todo_crud/internal/infrastructure/postgres"
 	pg "todo_crud/pkg/postgres"
-	"todo_crud/pkg/worker_pool"
 )
 
 func main() {
@@ -31,7 +32,7 @@ func main() {
 	}()
 
 	planningRepo := postgres.NewPlanningRepository(db, envInt("TASK_PLAN_MAX_ATTEMPTS", 3))
-	planner, err := worker_pool.NewPlanner(planningRepo, worker_pool.NewPlanGeneratorFromEnv(), worker_pool.PlannerConfig{
+	planner, err := workerapp.NewPlanner(planningRepo, polza.NewPlanGeneratorFromEnv(), workerapp.PlannerConfig{
 		PoolSize:     envInt("TASK_PLAN_WORKERS", 4),
 		PollInterval: envDuration("TASK_PLAN_POLL_INTERVAL", 3*time.Second),
 		StaleAfter:   envDuration("TASK_PLAN_STALE_AFTER", 30*time.Second),

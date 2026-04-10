@@ -1,4 +1,4 @@
-package worker_pool
+package worker
 
 import (
 	"context"
@@ -6,6 +6,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"todo_crud/pkg/worker_pool"
 )
 
 type Task struct {
@@ -27,7 +29,7 @@ type PlanGenerator interface {
 type Planner struct {
 	store        TaskStore
 	generator    PlanGenerator
-	pool         *WorkerPool
+	pool         *worker_pool.WorkerPool
 	pollInterval time.Duration
 	staleAfter   time.Duration
 	claimBatch   int
@@ -60,7 +62,7 @@ func NewPlanner(store TaskStore, generator PlanGenerator, cfg PlannerConfig) (*P
 		cfg.Logger = log.Default()
 	}
 
-	pool, err := NewWorkerPool(cfg.PoolSize)
+	pool, err := worker_pool.NewWorkerPool(cfg.PoolSize)
 	if err != nil {
 		return nil, err
 	}

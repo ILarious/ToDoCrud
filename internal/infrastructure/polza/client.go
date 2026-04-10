@@ -1,4 +1,4 @@
-package worker_pool
+package polza
 
 import (
 	"bytes"
@@ -10,13 +10,15 @@ import (
 	"os"
 	"strings"
 	"time"
+
+	workerapp "todo_crud/internal/app/worker"
 )
 
-const defaultPolzaURL = "https://polza.ai/api/v1/chat/completions"
+const defaultURL = "https://polza.ai/api/v1/chat/completions"
 
 type StaticPlanner struct{}
 
-func (StaticPlanner) GeneratePlan(_ context.Context, task Task) (string, error) {
+func (StaticPlanner) GeneratePlan(_ context.Context, task workerapp.Task) (string, error) {
 	title := strings.TrimSpace(task.Title)
 	if title == "" {
 		title = "Unnamed task"
@@ -28,14 +30,14 @@ func (StaticPlanner) GeneratePlan(_ context.Context, task Task) (string, error) 
 	), nil
 }
 
-type PolzaPlanner struct {
+type Client struct {
 	client   *http.Client
 	endpoint string
 	apiKey   string
 	model    string
 }
 
-func NewPlanGeneratorFromEnv() PlanGenerator {
+func NewPlanGeneratorFromEnv() workerapp.PlanGenerator {
 	apiKey := strings.TrimSpace(os.Getenv("POLZA_API_KEY"))
 	if apiKey == "" {
 		return StaticPlanner{}
@@ -43,7 +45,7 @@ func NewPlanGeneratorFromEnv() PlanGenerator {
 
 	endpoint := strings.TrimSpace(os.Getenv("POLZA_API_URL"))
 	if endpoint == "" {
-		endpoint = defaultPolzaURL
+		endpoint = defaultURL
 	}
 
 	model := strings.TrimSpace(os.Getenv("POLZA_MODEL"))
@@ -51,7 +53,7 @@ func NewPlanGeneratorFromEnv() PlanGenerator {
 		model = "openai/gpt-5.4-mini"
 	}
 
-	return &PolzaPlanner{
+	return &Client{
 		client: &http.Client{
 			Timeout: 40 * time.Second,
 		},
@@ -61,7 +63,7 @@ func NewPlanGeneratorFromEnv() PlanGenerator {
 	}
 }
 
-func (p *PolzaPlanner) GeneratePlan(ctx context.Context, task Task) (string, error) {
+func (p *Client) GeneratePlan(ctx context.Context, task workerapp.Task) (string, error) {
 	payload := chatCompletionRequest{
 		Model: p.model,
 		Messages: []chatMessage{

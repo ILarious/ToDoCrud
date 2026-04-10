@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"todo_crud/pkg/worker_pool"
+	workerapp "todo_crud/internal/app/worker"
 )
 
 type PlanningRepository struct {
@@ -25,7 +25,7 @@ func NewPlanningRepository(db *sql.DB, maxAttempts int) *PlanningRepository {
 	}
 }
 
-func (r *PlanningRepository) ClaimTasks(ctx context.Context, limit int, staleAfter time.Duration) ([]worker_pool.Task, error) {
+func (r *PlanningRepository) ClaimTasks(ctx context.Context, limit int, staleAfter time.Duration) ([]workerapp.Task, error) {
 	if limit <= 0 {
 		return nil, nil
 	}
@@ -67,9 +67,9 @@ func (r *PlanningRepository) ClaimTasks(ctx context.Context, limit int, staleAft
 	}
 	defer rows.Close()
 
-	tasks := make([]worker_pool.Task, 0, limit)
+	tasks := make([]workerapp.Task, 0, limit)
 	for rows.Next() {
-		var task worker_pool.Task
+		var task workerapp.Task
 		if err := rows.Scan(&task.ID, &task.ListID, &task.Title); err != nil {
 			return nil, err
 		}
