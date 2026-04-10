@@ -70,3 +70,6 @@ docker-compose.override.yml
 # Local config
 config.local.yaml
 config.local.yml
+
+.env.web
+.env.worker
