@@ -26,15 +26,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-    environment:
-      APP_PORT: "8080"
-      POSTGRES_HOST: postgres
-      POSTGRES_PORT: "5432"
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: todo
-      POSTGRES_SSLMODE: disable
-      MIGRATIONS_DIR: /app/migrations
+    env_file:
+      - .env.web
     command: ["/app/todo-api"]
     ports:
       - "8080:8080"
@@ -50,21 +43,8 @@ services:
         condition: service_healthy
       web:
         condition: service_started
-    environment:
-      POSTGRES_HOST: postgres
-      POSTGRES_PORT: "5432"
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: todo
-      POSTGRES_SSLMODE: disable
-      POLZA_API_KEY: ${POLZA_API_KEY:-}
-      POLZA_API_URL: ${POLZA_API_URL:-https://polza.ai/api/v1/chat/completions}
-      POLZA_MODEL: ${POLZA_MODEL:-openai/gpt-5.4-mini}
-      TASK_PLAN_WORKERS: ${TASK_PLAN_WORKERS:-4}
-      TASK_PLAN_POLL_INTERVAL: ${TASK_PLAN_POLL_INTERVAL:-3s}
-      TASK_PLAN_STALE_AFTER: ${TASK_PLAN_STALE_AFTER:-30s}
-      TASK_PLAN_CLAIM_BATCH: ${TASK_PLAN_CLAIM_BATCH:-4}
-      TASK_PLAN_MAX_ATTEMPTS: ${TASK_PLAN_MAX_ATTEMPTS:-3}
+    env_file:
+      - .env.worker
     command: ["/app/todo-worker"]
 
   frontend:
