@@ -1,20 +1,25 @@
 package handler
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"net/http"
 
 	"todo_crud/internal/app/http/dto"
 	domainerr "todo_crud/internal/domain/errors"
-	"todo_crud/internal/domain/service"
 )
 
-type AuthHandler struct {
-	auth service.AuthService
+type AuthService interface {
+	SignUp(ctx context.Context, name, username, password string) (string, error)
+	SignIn(ctx context.Context, username, password string) (string, error)
 }
 
-func NewAuthHandler(auth service.AuthService) *AuthHandler {
+type AuthHandler struct {
+	auth AuthService
+}
+
+func NewAuthHandler(auth AuthService) *AuthHandler {
 	return &AuthHandler{auth: auth}
 }
 

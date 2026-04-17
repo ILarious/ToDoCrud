@@ -7,22 +7,21 @@ import (
 
 	domainerr "todo_crud/internal/domain/errors"
 	"todo_crud/internal/domain/model"
-	"todo_crud/internal/domain/repository"
 )
 
-type ListService interface {
-	GetAll(ctx context.Context, userID int64) ([]model.TodoList, error)
-	Create(ctx context.Context, userID int64, title, description string) (model.TodoList, error)
-	GetByID(ctx context.Context, userID, listID int64) (model.TodoList, error)
-	Update(ctx context.Context, userID, listID int64, title, description *string) (model.TodoList, error)
-	Delete(ctx context.Context, userID, listID int64) error
+type listRepository interface {
+	Create(ctx context.Context, list model.TodoList) (int64, error)
+	GetAllByUser(ctx context.Context, userID int64) ([]model.TodoList, error)
+	GetByID(ctx context.Context, id int64) (model.TodoList, error)
+	Update(ctx context.Context, list model.TodoList) error
+	Delete(ctx context.Context, id int64) error
 }
 
 type listService struct {
-	repo repository.TodoListRepository
+	repo listRepository
 }
 
-func NewListService(repo repository.TodoListRepository) ListService {
+func NewListService(repo listRepository) *listService {
 	return &listService{repo: repo}
 }
 

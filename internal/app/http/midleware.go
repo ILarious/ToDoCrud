@@ -6,8 +6,11 @@ import (
 	"strings"
 
 	"todo_crud/internal/app/http/handler"
-	"todo_crud/internal/domain/service"
 )
+
+type TokenParser interface {
+	ParseToken(token string) (int64, error)
+}
 
 func CORSMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -30,7 +33,7 @@ func CORSMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-func AuthMiddleware(auth service.AuthService) func(http.Handler) http.Handler {
+func AuthMiddleware(auth TokenParser) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			authHeader := strings.TrimSpace(r.Header.Get("Authorization"))

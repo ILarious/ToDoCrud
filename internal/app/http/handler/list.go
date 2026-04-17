@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -11,14 +12,21 @@ import (
 	"todo_crud/internal/app/http/dto"
 	domainerr "todo_crud/internal/domain/errors"
 	"todo_crud/internal/domain/model"
-	"todo_crud/internal/domain/service"
 )
 
-type ListHandler struct {
-	lists service.ListService
+type ListService interface {
+	GetAll(ctx context.Context, userID int64) ([]model.TodoList, error)
+	Create(ctx context.Context, userID int64, title, description string) (model.TodoList, error)
+	GetByID(ctx context.Context, userID, listID int64) (model.TodoList, error)
+	Update(ctx context.Context, userID, listID int64, title, description *string) (model.TodoList, error)
+	Delete(ctx context.Context, userID, listID int64) error
 }
 
-func NewListHandler(lists service.ListService) *ListHandler {
+type ListHandler struct {
+	lists ListService
+}
+
+func NewListHandler(lists ListService) *ListHandler {
 	return &ListHandler{lists: lists}
 }
 

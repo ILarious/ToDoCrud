@@ -15,23 +15,21 @@ import (
 
 	domainerr "todo_crud/internal/domain/errors"
 	"todo_crud/internal/domain/model"
-	"todo_crud/internal/domain/repository"
 )
 
-type AuthService interface {
-	SignUp(ctx context.Context, name, username, password string) (string, error)
-	SignIn(ctx context.Context, username, password string) (string, error)
-	ParseToken(token string) (int64, error)
+type userRepository interface {
+	Create(ctx context.Context, user model.User) (int64, error)
+	GetByUsername(ctx context.Context, username string) (model.User, error)
 }
 
 type authService struct {
-	users      repository.UserRepository
+	users      userRepository
 	tokenKey   []byte
 	tokenTTL   time.Duration
 	hashPepper string
 }
 
-func NewAuthService(users repository.UserRepository, tokenKey string, tokenTTL time.Duration) AuthService {
+func NewAuthService(users userRepository, tokenKey string, tokenTTL time.Duration) *authService {
 	key := strings.TrimSpace(tokenKey)
 	if key == "" {
 		key = "dev-insecure-signing-key"
